@@ -1,15 +1,13 @@
-
-//     pin1: ['https://cooperaccion.org.pe/wp-content/uploads/2024/04/fa8a7ecb-2a7e-40c5-b7a6-32c522c3c510.webp', 'https://larepublica.cronosmedia.glr.pe/original/2023/07/15/64b2e1bf7049c37fa2267037.jpg'],
-
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Button, Modal, Image, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 
 export default function LugaresAfectadosComponent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mapCenter, setMapCenter] = useState([-77.0681, -11.9159]);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [selectedInfo, setSelectedInfo] = useState({ images: [], contaminationLevel: '', plasticLevel: '' });
+  const [selectedInfo, setSelectedInfo] = useState({ images: [], contaminationLevel: '', plasticLevel: '', status: '' });
 
   // Información para cada pin
   const pinData = {
@@ -17,21 +15,25 @@ export default function LugaresAfectadosComponent() {
       images: ['https://cooperaccion.org.pe/wp-content/uploads/2024/04/fa8a7ecb-2a7e-40c5-b7a6-32c522c3c510.webp', 'https://larepublica.cronosmedia.glr.pe/original/2023/07/15/64b2e1bf7049c37fa2267037.jpg'],
       contaminationLevel: 'Alto',
       plasticLevel: 'Elevado',
+      status: 'Por Atender',
     },
     pin2: {
-      images: ['https://example.com/image3.jpg', 'https://example.com/image4.jpg'],
+      images: ['https://www.actualidadambiental.pe/wp-content/uploads/2020/02/contaminacion-rio-chillon-el-comercio.jpg', 'https://imgmedia.larepublica.pe/640x371/larepublica/original/2022/06/16/62ab4584acce01340a3f82a3.webp'],
       contaminationLevel: 'Medio',
       plasticLevel: 'Moderado',
+      status: 'En Progreso',
     },
     pin3: {
-      images: ['https://example.com/image5.jpg', 'https://example.com/image6.jpg'],
+      images: ['https://elcomercio.pe/resizer/cEDAsWV7QZDCLhv4Q1dzy0dFZKY=/620x0/smart/filters:format(jpeg):quality(75)/arc-anglerfish-arc2-prod-elcomercio.s3.amazonaws.com/public/XC6OAUF5WNBOZJKVTGSUDGCD4Q.JPG', 'https://images.controlshift.app/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTU5OTksInB1ciI6ImJsb2JfaWQifX0=--58ba8981a7acda941e526588e9165146c311abc9/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJqcGciLCJzdHJpcCI6dHJ1ZSwicmVzaXplX3RvX2ZpdCI6WzcyNSwzMDBdfSwicHVyIjoidmFyaWF0aW9uIn19--05a588c1e142679bab22bb471238ab7a02053981/Rio_Chillon_3jpg.jpg'],
       contaminationLevel: 'Bajo',
       plasticLevel: 'Mínimo',
+      status: 'En Progreso',
     },
     pin4: {
-      images: ['https://example.com/image7.jpg', 'https://example.com/image8.jpg'],
+      images: ['https://elcomercio.pe/resizer/U1Yqnd-qhW1nW2VJD2DmCYnNKBk=/620x0/smart/filters:format(jpeg):quality(75)/arc-anglerfish-arc2-prod-elcomercio.s3.amazonaws.com/public/7APSIJGHSBBT5EBOKXIFMYBI6Y.JPG', 'https://puntoseguido.upc.edu.pe/wp-content/uploads/2023/05/FOTO-4-1024x768.jpg'],
       contaminationLevel: 'Medio',
       plasticLevel: 'Alto',
+      status: 'Por Atender',
     },
   };
 
@@ -57,6 +59,17 @@ export default function LugaresAfectadosComponent() {
     </head>
     <body>
       <div id="map"></div>
+      <div id="legend" style="position: absolute; bottom: 10px; left: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0px 0px 5px rgba(0,0,0,0.5);">
+        <h4>Historial de Colores</h4>
+        <div style="display: flex; align-items: center; margin-bottom: 5px;">
+          <div style="width: 15px; height: 15px; background-color: #004d00; margin-right: 5px;"></div>
+          <span>Verde Oscuro: Por Atender</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <div style="width: 15px; height: 15px; background-color: #66bb6a; margin-right: 5px;"></div>
+          <span>Verde Claro: En Progreso</span>
+        </div>
+      </div>
       <script>
         const map = new maplibregl.Map({
           container: 'map',
@@ -64,16 +77,16 @@ export default function LugaresAfectadosComponent() {
           center: [${mapCenter[0]}, ${mapCenter[1]}],
           zoom: 14
         });
-
         const puntosVerdes = [
-          { coordinates: [-77.0670, -11.9165], id: 'pin1' },
-          { coordinates: [-77.0695, -11.9178], id: 'pin2' },
-          { coordinates: [-77.0660, -11.9150], id: 'pin3' },
-          { coordinates: [-77.0700, -11.9185], id: 'pin4' }
-        ];
+          { coordinates: [ -77.069256, -11.908821], id: 'pin1', status: 'Por Atender' },
+          { coordinates: [-77.071259, -11.912741], id: 'pin2' },
+          { coordinates: [ -77.072292,-11.915988], id: 'pin3',status: 'Por Atender' },
+          { coordinates: [-77.067722, -11.908178], id: 'pin4' }
+        ];
 
-        puntosVerdes.forEach(({ coordinates, id }) => {
-          const marker = new maplibregl.Marker({ color: 'green' })
+        puntosVerdes.forEach(({ coordinates, id, status }) => {
+          const color = status === 'Por Atender' ? '#004d00' : '#66bb6a';
+          const marker = new maplibregl.Marker({ color: color })
             .setLngLat(coordinates)
             .addTo(map);
 
@@ -95,7 +108,7 @@ export default function LugaresAfectadosComponent() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <Button title="Buscar" onPress={() => setMapCenter([-77.0681, -11.9159])} />
+        <Button title="Buscar" color="#00796b" onPress={() => setMapCenter([-77.0681, -11.9159])} />
       </View>
 
       {/* Mapa con WebView */}
@@ -130,8 +143,18 @@ export default function LugaresAfectadosComponent() {
 
           {/* Información de Contaminación y Plástico */}
           <View style={styles.infoContainer}>
-            <Text style={styles.infoText}>Nivel de Contaminación: {selectedInfo.contaminationLevel}</Text>
-            <Text style={styles.infoText}>Nivel de Plástico: {selectedInfo.plasticLevel}</Text>
+            <View style={styles.infoRow}>
+              <MaterialIcons name="warning" size={24} color="#FF5722" />
+              <Text style={styles.infoText}>Nivel de Contaminación: {selectedInfo.contaminationLevel}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <FontAwesome5 name="recycle" size={24} color="#4CAF50" />
+              <Text style={styles.infoText}>Nivel de Plástico: {selectedInfo.plasticLevel}</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <FontAwesome5 name="clock" size={24} color={selectedInfo.status === 'Por Atender' ? '#004d00' : '#66bb6a'} />
+              <Text style={styles.infoText}>Estado: {selectedInfo.status}</Text>
+            </View>
           </View>
 
           <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
@@ -172,7 +195,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -189,10 +212,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalImage: {
-    width: 250, // Aumentamos el tamaño de la imagen para mejor visualización
+    width: 250,
     height: 250,
     marginVertical: 10,
-    borderRadius: 8,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: '#00796b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
   infoContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -202,11 +232,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   infoText: {
     fontSize: 18,
     color: '#333',
     fontWeight: '500',
-    marginVertical: 5,
+    marginLeft: 10,
   },
   closeButton: {
     backgroundColor: '#70B7C7',

@@ -15,7 +15,7 @@ export default function TopTabs() {
           onPress={() => setActiveTab('PuntosClaves')}
         >
           <Text style={[styles.tabText, activeTab === 'PuntosClaves' && styles.activeTabText]}>
-            Como llegar 
+           Conocenos
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
