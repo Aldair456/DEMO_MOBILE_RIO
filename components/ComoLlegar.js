@@ -10,7 +10,7 @@ export default function ComoLlegarComponent() {
       {/* Header Section */}
       <View style={styles.profileHeaderContainer}>
         <ImageBackground
-          source={{ uri: 'https://cdn.discordapp.com/attachments/1240772639409176604/1306826442176335924/LOGO-removebg-preview.png?ex=67381477&is=6736c2f7&hm=1162307d0431f1af30eb73b745d9797fcd32681cfc69588b6792d89a5495fd49&' }}
+          source={{ uri: 'https://cdn.discordapp.com/attachments/1240772639409176604/1306826442176335924/LOGO-removebg-preview.png?ex=67604a37&is=675ef8b7&hm=e7a36d412e3bfa4d03799df45928bac1e9b87bb805f0e05cc5e382631aa5f3c8&' }}
           style={styles.profileHeaderImage}
           imageStyle={{ resizeMode: 'cover' }}
         >
@@ -19,7 +19,7 @@ export default function ComoLlegarComponent() {
               <Image source={{ uri: 'https://example.com/back_icon.png' }} style={styles.icon} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => {}}>
-              <Image source={{ uri: 'https://example.com/user_icon.png' }} style={styles.icon} />
+              <Image source={{ uri: 'htt0ps://example.com/user_icon.png' }} style={styles.icon} />
             </TouchableOpacity>
           </View>
         </ImageBackground>
