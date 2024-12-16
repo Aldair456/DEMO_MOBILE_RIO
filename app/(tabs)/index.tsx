@@ -1,25 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import SplashScreen from '@/components/SplashScreen'; // Importa tu SplashScreen
-import TopTabs from '@/components/TopTabs';
+import AuthScreen from '@/components/AuthScreen'; // Importa AuthScreen
+import TopTabs from '@/components/TopTabs'; // Contenido principal (después de autenticación)
 
 export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true); // Estado para controlar el Splash Screen
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Estado para autenticación
+  const [isVisitor, setIsVisitor] = useState(false); // Estado para la opción de visitante
 
   useEffect(() => {
     // Simula una carga inicial de 3 segundos
     const loadApp = async () => {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Cambia el tiempo según sea necesario
+      await new Promise((resolve) => setTimeout(resolve, 3000)); // Tiempo de carga
       setIsLoading(false); // Oculta el Splash Screen
     };
 
     loadApp();
   }, []);
 
+  // 1. Splash Screen mientras carga la app
   if (isLoading) {
-    return <SplashScreen />; // Muestra el Splash Screen mientras se carga la app
+    return <SplashScreen />;
   }
 
+  // 2. Pantalla de Autenticación si no está autenticado ni es visitante
+  if (!isAuthenticated && !isVisitor) {
+    return (
+      <AuthScreen
+        onLogin={() => setIsAuthenticated(true)} // Lógica cuando el usuario inicia sesión
+        onRegister={() => setIsAuthenticated(true)} // Lógica cuando el usuario se registra
+        onVisitor={() => setIsVisitor(true)} // Lógica para la opción de visitante
+      />
+    );
+  }
+
+  // 3. Contenido principal después de autenticación o como visitante
   return (
     <View style={{ flex: 1 }}>
       <TopTabs />

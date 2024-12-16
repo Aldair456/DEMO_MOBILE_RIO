@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     zIndex: -1, // Envía los círculos detrás del logo
   },
   logo: {
-    width: 150, // Tamaño del logo
+    width: 250, // Tamaño del logo
     height: 150,
     resizeMode: 'contain',
   },
