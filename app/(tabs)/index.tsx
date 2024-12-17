@@ -3,10 +3,10 @@ import { View, StyleSheet } from 'react-native';
 import SplashScreen from '@/components/SplashScreen'; // Importa tu SplashScreen
 import AuthScreen from '@/components/AuthScreen'; // Importa AuthScreen
 import TopTabs from '@/components/TopTabs'; // Contenido principal (después de autenticación)
-import MapboxGL from '@rnmapbox/maps';
+//import MapboxGL from '@rnmapbox/maps';
 
 // Configura tu token de acceso
-MapboxGL.setAccessToken('pk.eyJ1IjoiYWxkYWlyMjMiLCJhIjoiY20zZzAycXhrMDFkODJscTJmMDF1cThpdyJ9.ov7ycdJg0xlYWpI6DykSdg');
+//MapboxGL.setAccessToken('TU_MAPBOX_ACCESS_TOKEN');
 
 export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true); // Estado para controlar el Splash Screen
