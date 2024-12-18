@@ -1,57 +1,45 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, TextInput, FlatList, Text, TouchableOpacity, Button, ActivityIndicator, Alert } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TextInput,
+  Button,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 
 const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxkYWlyMjMiLCJhIjoiY20zZzAycXhrMDFkODJscTJmMDF1cThpdyJ9.ov7ycdJg0xlYWpI6DykSdg';
 
-const MapComponent = ({ markerCoordinates }) => {
+type MarkerData = {
+  lat: number;
+  lng: number;
+  contaminationLevel?: string;
+  plasticLevel?: string;
+  status?: string;
+  images?: string[];
+};
+
+type MapComponentProps = {
+  markerCoordinates?: MarkerData[];
+};
+
+const MapComponent: React.FC<MapComponentProps> = ({ markerCoordinates = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [location, setLocation] = useState({ lat: -12.0464, lng: -77.0428 }); // Lima, Perú
+  const [location, setLocation] = useState<MarkerData>({ lat: -12.0464, lng: -77.0428 });
   const [isLoading, setIsLoading] = useState(false);
 
+  const safeMarkers = Array.isArray(markerCoordinates) ? markerCoordinates : [];
+
   useEffect(() => {
-    if (markerCoordinates) {
-      setLocation(markerCoordinates);
+    if (safeMarkers.length > 0) {
+      setLocation(safeMarkers[safeMarkers.length - 1]);
     }
   }, [markerCoordinates]);
 
-  // Obtener sugerencias en tiempo real
-  const fetchSuggestions = async (text) => {
-    if (text.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          text
-        )}.json?access_token=${MAPBOX_ACCESS_TOKEN}&proximity=-77.0428,-12.0464&bbox=-77.2,-12.2,-76.8,-11.9&autocomplete=true&limit=5`
-      );
-      const data = await response.json();
-
-      const processedSuggestions = data.features.map((item) => {
-        const district = item.context?.find((c) => c.id.includes('locality'))?.text || 'Distrito desconocido';
-        return {
-          id: item.id,
-          name: item.place_name,
-          district,
-          center: item.center,
-        };
-      });
-
-      setSuggestions(processedSuggestions);
-    } catch (error) {
-      console.error('Error al obtener sugerencias:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const searchLocation = async () => {
     if (!searchQuery) {
-      Alert.alert('Error', 'Por favor ingresa una dirección para buscar.');
+      Alert.alert('Error', 'Por favor ingresa una direccion para buscar.');
       return;
     }
     try {
@@ -62,108 +50,106 @@ const MapComponent = ({ markerCoordinates }) => {
         )}.json?access_token=${MAPBOX_ACCESS_TOKEN}`
       );
       const data = await response.json();
-
       if (data.features.length > 0) {
         const [lng, lat] = data.features[0].center;
         setLocation({ lat, lng });
-        setSuggestions([]);
       } else {
-        Alert.alert('No encontrado', 'No se pudo encontrar la dirección ingresada.');
+        Alert.alert('No encontrado', 'No se pudo encontrar la direccion ingresada.');
       }
     } catch (error) {
-      console.error('Error al buscar la ubicación:', error);
-      Alert.alert('Error', 'Hubo un problema al buscar la ubicación.');
+      console.error('Error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const selectLocation = (item) => {
-    const [lng, lat] = item.center;
-    setLocation({ lat, lng });
-    setSearchQuery(item.name);
-    setSuggestions([]);
-  };
+  const generateHTML = (location: MarkerData, markers: MarkerData[]) => {
+    const markersJS = markers
+      .map((marker) => {
+        const contamination = marker.contaminationLevel || 'Desconocido';
+        const plastic = marker.plasticLevel || 'Desconocido';
+        const status = marker.status || 'Desconocido';
+        const imagesHTML = (marker.images || [])
+          .map(img => `<img src="${img}" alt="Lugar" style="width:100%;border-radius:5px;margin-bottom:5px;"/>`)
+          .join('');
 
-  // HTML para el mapa
-  const generateHTML = (lat, lng, marker) => `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Mapbox Map</title>
-        <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-        <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-        <style>
-          body, html { margin: 0; padding: 0; height: 100%; }
-          #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        </style>
-      </head>
-      <body>
-        <div id="map"></div>
-        <script>
-          mapboxgl.accessToken = '${MAPBOX_ACCESS_TOKEN}';
-          const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [${lng}, ${lat}],
-            zoom: 12
-          });
+        const popupHTML = `
+          <div style="max-width:220px;font-family:sans-serif;">
+            <h3 style="font-size:16px;margin:0 0 10px 0;text-align:center;">Informacion del Lugar</h3>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
+              ${imagesHTML}
+            </div>
+            <div style="background:#fff;border-radius:5px;padding:10px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+              <div style="margin-bottom:5px;font-size:14px;"><strong>Nivel de Contaminacion:</strong> ${contamination}</div>
+              <div style="margin-bottom:5px;font-size:14px;"><strong>Nivel de Plastico:</strong> ${plastic}</div>
+              <div style="margin-bottom:0;font-size:14px;"><strong>Estado:</strong> ${status}</div>
+            </div>
+          </div>
+        `;
 
-          new mapboxgl.Marker()
-            .setLngLat([${lng}, ${lat}])
-            .setPopup(new mapboxgl.Popup().setHTML('<h3>Ubicación Seleccionada</h3>'))
-            .addTo(map);
-
-          ${marker ? `
-            new mapboxgl.Marker({ color: 'red' })
+        return `
+          {
+            const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(\`${popupHTML}\`);
+            new mapboxgl.Marker({ color: 'green' })
               .setLngLat([${marker.lng}, ${marker.lat}])
-              .setPopup(new mapboxgl.Popup().setHTML('<h3>Coordenadas Insertadas</h3>'))
+              .setPopup(popup)
               .addTo(map);
-          ` : ''}
-        </script>
-      </body>
-    </html>
-  `;
+          }
+        `;
+      })
+      .join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8"/>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Mapbox Map</title>
+          <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+          <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+          <style>
+            body, html { margin:0; padding:0; height:100%; }
+            #map { position:absolute; top:0; bottom:0; width:100%; }
+          </style>
+        </head>
+        <body>
+          <div id="map"></div>
+          <script>
+            mapboxgl.accessToken = '${MAPBOX_ACCESS_TOKEN}';
+            const map = new mapboxgl.Map({
+              container: 'map',
+              style: 'mapbox://styles/mapbox/streets-v11',
+              center: [${location.lng}, ${location.lat}],
+              zoom: 12
+            });
+            ${markersJS}
+          </script>
+        </body>
+      </html>
+    `;
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Buscar dirección..."
+          placeholder="Buscar direccion..."
           value={searchQuery}
           onChangeText={(text) => {
             setSearchQuery(text);
-            fetchSuggestions(text);
           }}
         />
         <Button title="Buscar" onPress={searchLocation} />
       </View>
 
-      {suggestions.length > 0 && (
-        <FlatList
-          data={suggestions}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.suggestionItem} onPress={() => selectLocation(item)}>
-              <Text style={styles.suggestionText}>{item.name}</Text>
-              <Text style={styles.districtText}>Distrito: {item.district}</Text>
-            </TouchableOpacity>
-          )}
-          style={styles.suggestionsList}
-        />
-      )}
-
-      {isLoading && <ActivityIndicator size="large" color="#007AFF" style={styles.loadingIndicator} />}
+      {isLoading && <ActivityIndicator size="large" color="#007AFF" />}
 
       <WebView
         originWhitelist={['*']}
-        source={{ html: generateHTML(location.lat, location.lng, markerCoordinates) }}
+        source={{ html: generateHTML(location, safeMarkers) }}
         style={styles.webview}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
       />
     </View>
   );
@@ -173,12 +159,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   searchContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
+    padding: 10,
     backgroundColor: 'white',
-    paddingVertical: 5,
-    elevation: 4,
-    zIndex: 10,
+    elevation: 2,
   },
   input: {
     flex: 1,
@@ -189,24 +172,6 @@ const styles = StyleSheet.create({
     height: 40,
     marginRight: 10,
   },
-  suggestionsList: {
-    backgroundColor: 'white',
-    position: 'absolute',
-    top: 60,
-    left: 10,
-    right: 10,
-    zIndex: 10,
-    borderRadius: 5,
-    elevation: 4,
-  },
-  suggestionItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  suggestionText: { fontSize: 16, fontWeight: 'bold' },
-  districtText: { fontSize: 14, color: '#666' },
-  loadingIndicator: { position: 'absolute', top: 100, alignSelf: 'center' },
   webview: { flex: 1 },
 });
 

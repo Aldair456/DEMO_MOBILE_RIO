@@ -7,7 +7,14 @@ import InsertarCoordenadasComponent from '@/components/InsertarCoordenadasCompon
 
 export default function TopTabs() {
   const [activeTab, setActiveTab] = useState('PuntosClaves');
-  const [markerCoordinates, setMarkerCoordinates] = useState(null); // Estado global para el marcador
+
+  // Estado compartido para almacenar múltiples coordenadas
+  const [markerCoordinates, setMarkerCoordinates] = useState([]);
+
+  // Función para agregar nuevas coordenadas al estado existente
+  const handleInsertCoordinates = (newCoordinate) => {
+    setMarkerCoordinates((prevCoordinates) => [...prevCoordinates, newCoordinate]);
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -44,7 +51,7 @@ export default function TopTabs() {
         {activeTab === 'PuntosClaves' && <ComoLlegarComponent />}
         {activeTab === 'CentrosAcopio' && <CentrosAcopioComponent />}
         {activeTab === 'LugaresAfectados' && <MapComponent markerCoordinates={markerCoordinates} />}
-        {activeTab === 'InsertarCoordenadas' && <InsertarCoordenadasComponent onInsert={setMarkerCoordinates} />}
+        {activeTab === 'InsertarCoordenadas' && <InsertarCoordenadasComponent onInsert={handleInsertCoordinates} />}
       </View>
     </View>
   );
