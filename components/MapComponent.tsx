@@ -6,8 +6,14 @@ import {
   Button,
   ActivityIndicator,
   Alert,
+  Modal,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // Importar íconos
 
 const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxkYWlyMjMiLCJhIjoiY20zZzAycXhrMDFkODJscTJmMDF1cThpdyJ9.ov7ycdJg0xlYWpI6DykSdg';
 
@@ -28,6 +34,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ markerCoordinates = [] }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState<MarkerData>({ lat: -12.0464, lng: -77.0428 });
   const [isLoading, setIsLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
 
   const safeMarkers = Array.isArray(markerCoordinates) ? markerCoordinates : [];
 
@@ -39,7 +47,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ markerCoordinates = [] }) =
 
   const searchLocation = async () => {
     if (!searchQuery) {
-      Alert.alert('Error', 'Por favor ingresa una direccion para buscar.');
+      Alert.alert('Error', 'Por favor ingresa una dirección para buscar.');
       return;
     }
     try {
@@ -54,10 +62,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ markerCoordinates = [] }) =
         const [lng, lat] = data.features[0].center;
         setLocation({ lat, lng });
       } else {
-        Alert.alert('No encontrado', 'No se pudo encontrar la direccion ingresada.');
+        Alert.alert('No encontrado', 'No se pudo encontrar la dirección ingresada.');
       }
     } catch (error) {
       console.error('Error:', error);
+      Alert.alert('Error', 'Ocurrió un error al buscar la dirección.');
     } finally {
       setIsLoading(false);
     }
@@ -65,36 +74,19 @@ const MapComponent: React.FC<MapComponentProps> = ({ markerCoordinates = [] }) =
 
   const generateHTML = (location: MarkerData, markers: MarkerData[]) => {
     const markersJS = markers
-      .map((marker) => {
-        const contamination = marker.contaminationLevel || 'Desconocido';
-        const plastic = marker.plasticLevel || 'Desconocido';
-        const status = marker.status || 'Desconocido';
-        const imagesHTML = (marker.images || [])
-          .map(img => `<img src="${img}" alt="Lugar" style="width:100%;border-radius:5px;margin-bottom:5px;"/>`)
-          .join('');
-
-        const popupHTML = `
-          <div style="max-width:220px;font-family:sans-serif;">
-            <h3 style="font-size:16px;margin:0 0 10px 0;text-align:center;">Informacion del Lugar</h3>
-            <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
-              ${imagesHTML}
-            </div>
-            <div style="background:#fff;border-radius:5px;padding:10px;box-shadow:0 2px 5px rgba(0,0,0,0.3);">
-              <div style="margin-bottom:5px;font-size:14px;"><strong>Nivel de Contaminacion:</strong> ${contamination}</div>
-              <div style="margin-bottom:5px;font-size:14px;"><strong>Nivel de Plastico:</strong> ${plastic}</div>
-              <div style="margin-bottom:0;font-size:14px;"><strong>Estado:</strong> ${status}</div>
-            </div>
-          </div>
-        `;
+      .map((marker, index) => {
+        const markerData = JSON.stringify(marker)
+          .replace(/\\/g, '\\\\') // Escapar barras invertidas
+          .replace(/'/g, "\\'")    // Escapar comillas simples
+          .replace(/"/g, '\\"');   // Escapar comillas dobles
 
         return `
-          {
-            const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(\`${popupHTML}\`);
-            new mapboxgl.Marker({ color: 'green' })
-              .setLngLat([${marker.lng}, ${marker.lat}])
-              .setPopup(popup)
-              .addTo(map);
-          }
+          const marker${index} = new mapboxgl.Marker({ color: 'green' })
+            .setLngLat([${marker.lng}, ${marker.lat}])
+            .addTo(map);
+          marker${index}.getElement().addEventListener('click', () => {
+            window.ReactNativeWebView.postMessage('${markerData}');
+          });
         `;
       })
       .join('');
@@ -123,6 +115,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ markerCoordinates = [] }) =
               center: [${location.lng}, ${location.lat}],
               zoom: 12
             });
+
             ${markersJS}
           </script>
         </body>
@@ -130,27 +123,86 @@ const MapComponent: React.FC<MapComponentProps> = ({ markerCoordinates = [] }) =
     `;
   };
 
+  const handleMessage = (event: any) => {
+    try {
+      const markerData: MarkerData = JSON.parse(event.nativeEvent.data);
+      setSelectedMarker(markerData);
+      setModalVisible(true);
+    } catch (error) {
+      console.error('Error parsing marker data:', error);
+      Alert.alert('Error', 'Ocurrió un error al procesar la información del marcador.');
+    }
+  };
+
   return (
     <View style={styles.container}>
+      {/* Barra de búsqueda */}
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Buscar direccion..."
+          placeholder="Buscar dirección..."
           value={searchQuery}
           onChangeText={(text) => {
             setSearchQuery(text);
           }}
+          onSubmitEditing={searchLocation}
         />
         <Button title="Buscar" onPress={searchLocation} />
       </View>
 
+      {/* Indicador de carga */}
       {isLoading && <ActivityIndicator size="large" color="#007AFF" />}
 
+      {/* Mapa WebView */}
       <WebView
         originWhitelist={['*']}
         source={{ html: generateHTML(location, safeMarkers) }}
         style={styles.webview}
+        onMessage={handleMessage}
       />
+
+      {/* Modal para mostrar información del marcador */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView>
+              <Text style={styles.modalTitle}>Información del Lugar</Text>
+              {/* Imágenes */}
+              {selectedMarker?.images && selectedMarker.images.length > 0 && (
+                <View style={styles.imageStack}>
+                  {selectedMarker.images.map((img, idx) => (
+                    <Image key={idx} source={{ uri: img }} style={styles.stackedImage} />
+                  ))}
+                </View>
+              )}
+              {/* Información */}
+              <View style={styles.infoRow}>
+                <Icon name="warning" size={24} color="#FF3B30" style={styles.icon} />
+                <Text style={styles.infoText}>Nivel de Contaminación: {selectedMarker?.contaminationLevel || 'Desconocido'}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Icon name="recycling" size={24} color="#34C759" style={styles.icon} />
+                <Text style={styles.infoText}>Nivel de Plástico: {selectedMarker?.plasticLevel || 'Desconocido'}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Icon name="info" size={24} color="#007AFF" style={styles.icon} />
+                <Text style={styles.infoText}>Estado: {selectedMarker?.status || 'Desconocido'}</Text>
+              </View>
+              {/* Botón */}
+              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeButtonText}>Cerrar</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -173,6 +225,60 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   webview: { flex: 1 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  imageStack: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  stackedImage: {
+    width: '90%',
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 10,
+    resizeMode: 'cover',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  closeButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
 });
 
 export default MapComponent;
