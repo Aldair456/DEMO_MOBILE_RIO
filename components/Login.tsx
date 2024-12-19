@@ -8,8 +8,9 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Asegúrate de tener instalado @expo/vector-icons
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Importar AsyncStorage para guardar el token
 
 interface LoginProps {
   onNavigate: () => void;
@@ -20,6 +21,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar contraseña
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // Estado para el mensaje de error
 
   const handleLogin = async () => {
     try {
@@ -38,29 +40,39 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
         }
       );
 
-      // Mostrar el mensaje en la consola
       console.log('Respuesta del servidor:', response.data);
 
       if (response.status === 200) {
+        const { token } = response.data; // Suponiendo que el JWT se devuelve como "token"
+
+        // Guardar el token en AsyncStorage
+        await AsyncStorage.setItem('userToken', token);
+        console.log('JWT guardado en AsyncStorage:', token);
+
+        setErrorMessage(null); // Limpiar mensaje de error
         Alert.alert('Inicio de Sesión Exitoso', 'Bienvenido a la aplicación');
         onLogin(); // Notificar al componente principal que el login fue exitoso
       } else {
-        Alert.alert('Error', 'Credenciales incorrectas');
+        handleErrorMessage('Correo o contraseña incorrecta');
       }
     } catch (error: any) {
       console.error('Error al iniciar sesión:', error.response?.data || error.message);
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.'
-      );
+      handleErrorMessage('Correo o contraseña incorrecta');
     }
+  };
+
+  const handleErrorMessage = (message: string) => {
+    setErrorMessage(message);
+    // Configurar el temporizador para eliminar el mensaje después de 5 segundos
+    setTimeout(() => {
+      setErrorMessage(null);
+    }, 5000);
   };
 
   return (
     <View style={styles.container}>
-      {/* Fondo decorativo con círculos */}
+      {/* Fondo decorativo con círculo */}
       <View style={styles.circleLarge} />
-      <View style={styles.circleSmall} />
 
       {/* Imagen encima del título */}
       <Image
@@ -100,6 +112,11 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
         </TouchableOpacity>
       </View>
 
+      {/* Mensaje de error */}
+      {errorMessage && (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      )}
+
       {/* Botón para iniciar sesión */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
@@ -131,15 +148,6 @@ const styles = StyleSheet.create({
     top: -100,
     right: -100,
   },
-  circleSmall: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#4CAF50',
-    bottom: -50,
-    left: -50,
-  },
   image: {
     width: 120,
     height: 120,
@@ -169,11 +177,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
     padding: 3,
-    marginBottom: 15,
+    marginBottom: 5,
   },
   inputPassword: {
     flex: 1,
     fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'left',
+    width: 300,
   },
   button: {
     backgroundColor: '#4CAF50',

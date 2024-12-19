@@ -59,7 +59,6 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
   return (
     <View style={styles.container}>
       <View style={styles.circleLarge} />
-      <View style={styles.circleSmall} />
 
       <Image
         source={require('@/assets/images/register_imagen.png')}
@@ -157,15 +156,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     top: -100,
     right: -100,
-  },
-  circleSmall: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#4CAF50',
-    bottom: -50,
-    left: -50,
   },
   image: {
     width: 120,
