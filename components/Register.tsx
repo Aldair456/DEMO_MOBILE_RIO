@@ -1,29 +1,71 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons'; // Asegúrate de tener instalado @expo/vector-icons
+import axios from 'axios';
 
 interface RegisterProps {
-  onNavigate: () => void;
-  onRegister: () => void;
+  onNavigate: () => void; // Prop para manejar la navegación a otra pantalla
 }
 
-const Register: React.FC<RegisterProps> = ({ onNavigate, onRegister }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
+  const [name, setName] = useState<string>(''); // Agregando el tipo explícito <string>
+  const [lastName, setLastName] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [district, setDistrict] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false); // Estado para mostrar/ocultar contraseña
+
+  // Función para manejar el registro
+  const handleRegister = async (): Promise<void> => {
+    try {
+      const requestBody = {
+        data: {
+          name,
+          last_name: lastName,
+          phone,
+          district,
+        },
+        email,
+        password,
+      };
+
+      const response = await axios.post(
+        'https://289y9jv9n7.execute-api.us-east-1.amazonaws.com/dev/user/register',
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      Alert.alert('Registro Exitoso', 'Usuario registrado correctamente');
+      console.log(response.data);
+    } catch (error) {
+      console.error('Error al registrar usuario:', error);
+      Alert.alert('Error', 'No se pudo registrar el usuario. Inténtalo de nuevo.');
+    }
+  };
 
   return (
     <View style={styles.container}>
-      {/* Fondo decorativo con círculos */}
       <View style={styles.circleLarge} />
       <View style={styles.circleSmall} />
 
-      {/* Imagen encima del título */}
       <Image
-        source={require('@/assets/images/register_imagen.png')} // Reemplaza con tu imagen
+        source={require('@/assets/images/register_imagen.png')}
         style={styles.image}
       />
 
-      {/* Título */}
       <Text style={styles.title}>Registrarse</Text>
 
       {/* Inputs */}
@@ -35,6 +77,28 @@ const Register: React.FC<RegisterProps> = ({ onNavigate, onRegister }) => {
         placeholderTextColor="#999"
       />
       <TextInput
+        placeholder="Apellido"
+        style={styles.input}
+        value={lastName}
+        onChangeText={setLastName}
+        placeholderTextColor="#999"
+      />
+      <TextInput
+        placeholder="Teléfono"
+        style={styles.input}
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+        placeholderTextColor="#999"
+      />
+      <TextInput
+        placeholder="Distrito"
+        style={styles.input}
+        value={district}
+        onChangeText={setDistrict}
+        placeholderTextColor="#999"
+      />
+      <TextInput
         placeholder="Correo Electrónico"
         style={styles.input}
         value={email}
@@ -42,24 +106,36 @@ const Register: React.FC<RegisterProps> = ({ onNavigate, onRegister }) => {
         keyboardType="email-address"
         placeholderTextColor="#999"
       />
-      <TextInput
-        placeholder="Contraseña"
-        style={styles.input}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        placeholderTextColor="#999"
-      />
+
+      {/* Input de contraseña con funcionalidad de mostrar/ocultar */}
+      <View style={styles.passwordContainer}>
+        <TextInput
+          placeholder="Contraseña"
+          style={styles.inputPassword}
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons
+            name={showPassword ? 'eye-off' : 'eye'}
+            size={24}
+            color="#999"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Botón para registrarse */}
-      <TouchableOpacity style={styles.button} onPress={onRegister}>
+      <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Crear Cuenta</Text>
       </TouchableOpacity>
 
       {/* Texto para navegar al inicio de sesión */}
       <TouchableOpacity onPress={onNavigate}>
         <Text style={styles.text}>
-          ¿Ya tienes cuenta? <Text style={styles.textHighlight}>Inicia Sesión</Text>
+          ¿Ya tienes cuenta?{' '}
+          <Text style={styles.textHighlight}>Inicia Sesión</Text>
         </Text>
       </TouchableOpacity>
     </View>
@@ -110,6 +186,23 @@ const styles = StyleSheet.create({
     borderColor: '#CCC',
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
+  },
+  passwordContainer: {
+    width: 300,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 10,
+    backgroundColor: '#F9F9F9',
+    paddingHorizontal: 10, // Ajustado para reducir el ancho visual
+    paddingVertical: 8, // Ajustado para reducir la altura visual
+    marginBottom: 15,
+  },
+  inputPassword: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0, // Elimina padding adicional del TextInput
   },
   button: {
     backgroundColor: '#4CAF50',

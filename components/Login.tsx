@@ -1,14 +1,60 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons'; // Asegúrate de tener instalado @expo/vector-icons
+import axios from 'axios';
 
 interface LoginProps {
   onNavigate: () => void;
-  onLogin: () => void;
+  onLogin: () => void; // Se agrega para notificar inicio de sesión exitoso
 }
 
 const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Estado para mostrar/ocultar contraseña
+
+  const handleLogin = async () => {
+    try {
+      const requestBody = {
+        email: email,
+        password: password,
+      };
+
+      const response = await axios.post(
+        'https://289y9jv9n7.execute-api.us-east-1.amazonaws.com/dev/user/login',
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      // Mostrar el mensaje en la consola
+      console.log('Respuesta del servidor:', response.data);
+
+      if (response.status === 200) {
+        Alert.alert('Inicio de Sesión Exitoso', 'Bienvenido a la aplicación');
+        onLogin(); // Notificar al componente principal que el login fue exitoso
+      } else {
+        Alert.alert('Error', 'Credenciales incorrectas');
+      }
+    } catch (error: any) {
+      console.error('Error al iniciar sesión:', error.response?.data || error.message);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.'
+      );
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -34,17 +80,28 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
         keyboardType="email-address"
         placeholderTextColor="#999"
       />
-      <TextInput
-        placeholder="Contraseña"
-        style={styles.input}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        placeholderTextColor="#999"
-      />
+
+      {/* Input de contraseña con funcionalidad de mostrar/ocultar */}
+      <View style={styles.passwordContainer}>
+        <TextInput
+          placeholder="Contraseña"
+          style={styles.inputPassword}
+          secureTextEntry={!showPassword}
+          value={password}
+          onChangeText={setPassword}
+          placeholderTextColor="#999"
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons
+            name={showPassword ? 'eye-off' : 'eye'}
+            size={24}
+            color="#999"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Botón para iniciar sesión */}
-      <TouchableOpacity style={styles.button} onPress={onLogin}>
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
 
@@ -102,6 +159,21 @@ const styles = StyleSheet.create({
     borderColor: '#CCC',
     borderRadius: 10,
     backgroundColor: '#F9F9F9',
+  },
+  passwordContainer: {
+    width: 300,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#CCC',
+    borderRadius: 10,
+    backgroundColor: '#F9F9F9',
+    padding: 3,
+    marginBottom: 15,
+  },
+  inputPassword: {
+    flex: 1,
+    fontSize: 16,
   },
   button: {
     backgroundColor: '#4CAF50',

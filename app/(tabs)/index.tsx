@@ -3,10 +3,6 @@ import { View, StyleSheet } from 'react-native';
 import SplashScreen from '@/components/SplashScreen'; // Importa tu SplashScreen
 import AuthScreen from '@/components/AuthScreen'; // Importa AuthScreen
 import TopTabs from '@/components/TopTabs'; // Contenido principal (después de autenticación)
-//import MapboxGL from '@rnmapbox/maps';
-
-// Configura tu token de acceso
-//MapboxGL.setAccessToken('TU_MAPBOX_ACCESS_TOKEN');
 
 export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true); // Estado para controlar el Splash Screen
@@ -23,28 +19,28 @@ export default function HomeScreen() {
     loadApp();
   }, []);
 
-  // 1. Splash Screen mientras carga la app
+  // 1. Mostrar el Splash Screen mientras carga la app
   if (isLoading) {
     return <SplashScreen />;
   }
 
-  // 2. Pantalla de Autenticación si no está autenticado ni es visitante
+  // 2. Mostrar la pantalla de autenticación si el usuario no está autenticado ni es visitante
   if (!isAuthenticated && !isVisitor) {
     return (
       <AuthScreen
-        onLogin={() => setIsAuthenticated(true)} // Lógica cuando el usuario inicia sesión
-        onRegister={() => setIsAuthenticated(true)} // Lógica cuando el usuario se registra
-        onVisitor={() => setIsVisitor(true)} // Lógica para la opción de visitante
+        onLogin={() => setIsAuthenticated(true)} // Manejar autenticación exitosa
+        onRegister={() => setIsAuthenticated(true)} // Manejar registro exitoso
+        onVisitor={() => setIsVisitor(true)} // Manejar acceso como visitante
       />
     );
   }
 
-  // 3. Contenido principal después de autenticación o como visitante
+  // 3. Mostrar el contenido principal después de autenticación o si el usuario eligió ser visitante
   return (
     <View style={{ flex: 1 }}>
       <TopTabs />
       <View style={styles.inputContainer}>
-        {/* Aquí puedes añadir más contenido si lo necesitas */}
+        {/* Puedes añadir contenido adicional aquí, si lo necesitas */}
       </View>
     </View>
   );
