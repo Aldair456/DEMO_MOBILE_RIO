@@ -38,7 +38,7 @@ const PerfilComponent: React.FC = () => {
         }
 
         const response = await axios.get(
-          'https://289y9jv9n7.execute-api.us-east-1.amazonaws.com/dev/user/me',
+          'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/me',
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -31,7 +31,7 @@ const Login: React.FC<LoginProps> = ({ onNavigate, onLogin }) => {
       };
 
       const response = await axios.post(
-        'https://289y9jv9n7.execute-api.us-east-1.amazonaws.com/dev/user/login',
+        'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/login',
         requestBody,
         {
           headers: {

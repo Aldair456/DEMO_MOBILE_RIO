@@ -39,7 +39,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
       };
 
       const response = await axios.post(
-        'https://289y9jv9n7.execute-api.us-east-1.amazonaws.com/dev/user/register',
+        'https://plaqmrxx8g.execute-api.us-east-1.amazonaws.com/dev/user/register',
         requestBody,
         {
           headers: {
