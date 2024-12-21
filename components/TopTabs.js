@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { decode as atob } from 'base-64';
+
 import ComoLlegarComponent from '@/components/ComoLlegar';
 import CentrosAcopioComponent from '@/components/CentrosAcopioComponent';
 import MapComponent from '@/components/MapComponent';
@@ -9,13 +12,54 @@ import PerfilComponent from '@/components/PerfilComponent'; // Importa el compon
 const Drawer = createDrawerNavigator();
 
 export default function DrawerNavigator() {
-  // Estado compartido para almacenar múltiples coordenadas
+  // Estado para almacenar coordenadas
   const [markerCoordinates, setMarkerCoordinates] = useState([]);
+  // Estado para almacenar el rol decodificado del JWT
+  const [role, setRole] = useState(null);
 
-  // Función para agregar nuevas coordenadas al estado existente
+  // Función para decodificar el JWT manualmente
+  const decodeJWT = (token) => {
+    try {
+      const payload = token.split('.')[1];
+      const decodedPayload = JSON.parse(atob(payload));
+      return decodedPayload;
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        if (token) {
+          const decodedToken = decodeJWT(token);
+          if (decodedToken && decodedToken.role) {
+            setRole(decodedToken.role);
+          } else {
+            setRole('USER'); // Si no se encuentra el rol, asumir 'USER'
+          }
+        } else {
+          setRole('USER'); // Si no hay token, asumir 'USER'
+        }
+      } catch (error) {
+        console.error('Error al obtener el token desde AsyncStorage:', error);
+        setRole('USER');
+      }
+    };
+
+    fetchRole();
+  }, []);
+
   const handleInsertCoordinates = (newCoordinate) => {
     setMarkerCoordinates((prevCoordinates) => [...prevCoordinates, newCoordinate]);
   };
+
+  // Si aún no se ha determinado el rol, no renderizamos nada
+  if (role === null) {
+    return null;
+  }
 
   return (
     <Drawer.Navigator
@@ -35,23 +79,26 @@ export default function DrawerNavigator() {
         drawerInactiveTintColor: 'gray',
       }}
     >
-      {/* Pantallas del Drawer Navigator */}
       <Drawer.Screen name="Perfil" component={PerfilComponent} />
       <Drawer.Screen name="Conócenos" component={ComoLlegarComponent} />
       <Drawer.Screen name="Centros de Acopio" component={CentrosAcopioComponent} />
       <Drawer.Screen name="Lugares Afectados">
         {() => <MapComponent markerCoordinates={markerCoordinates} />}
       </Drawer.Screen>
-      <Drawer.Screen name="Insertar Coordenadas">
-        {() => (
-          <InsertarCoordenadasComponent
-            onInsert={(newCoordinate) => {
-              handleInsertCoordinates(newCoordinate);
-              console.log('Nueva coordenada:', newCoordinate);
-            }}
-          />
-        )}
-      </Drawer.Screen>
+
+      {/* Mostrar Insertar Coordenadas solo si el rol es administrador */}
+      {role === 'administrador' && (
+        <Drawer.Screen name="Insertar Coordenadas">
+          {() => (
+            <InsertarCoordenadasComponent
+              onInsert={(newCoordinate) => {
+                handleInsertCoordinates(newCoordinate);
+                console.log('Nueva coordenada:', newCoordinate);
+              }}
+            />
+          )}
+        </Drawer.Screen>
+      )}
     </Drawer.Navigator>
   );
 }
